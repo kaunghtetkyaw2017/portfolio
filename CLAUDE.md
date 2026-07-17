@@ -14,14 +14,17 @@ Open `index.html` in a browser or use any static file server (e.g., `python3 -m 
 
 **Three files, single-page application:**
 
-- `index.html` — All sections in one file: hero, about, skills, CI/CD pipeline visualization, projects, certifications, education, contact form, footer
-- `style.css` — CSS custom properties (design tokens) in `:root`, responsive breakpoints at 1024px/768px/480px
-- `script.js` — Modular init functions called on `DOMContentLoaded`: particles canvas, navbar, terminal animation, typed text effect, scroll reveal, pipeline animation, count-up stats, contact form (Web3Forms API)
+- `index.html` — All sections in one file: hero, about, skills, pipeline, projects (horizontal scroll), certifications, contact form, footer
+- `style.css` — CSS custom properties (design tokens) in `:root`, clean light aesthetic with emerald accent, responsive breakpoints at 1024px/768px/480px
+- `script.js` — Modular init functions called on `DOMContentLoaded`: navbar, scroll reveal, count-up stats, horizontal scroll drag, contact form (Web3Forms API), scroll progress bar
 
 **Key patterns:**
 
 - All interactivity is vanilla JS with no dependencies
-- Animations use `IntersectionObserver` for scroll-triggered effects (reveal, pipeline, counters)
-- Terminal in hero section cycles through DevOps commands (kubectl, terraform, docker, helm) with typing animation
-- Contact form submits to Web3Forms API — requires replacing `YOUR_ACCESS_KEY_HERE` in `index.html:664` with a real key
-- Design tokens (colors, fonts, spacing, radii) are centralized in CSS `:root` variables
+- Clean light design: emerald accent (#10b981), Syne display + DM Sans body + DM Mono mono fonts, floating blob backgrounds
+- Split-screen hero with outlined text effect (-webkit-text-stroke) and stats cards
+- Scroll progress bar at top of page
+- Animations use `IntersectionObserver` for scroll-triggered reveal effects with staggered delays
+- Projects section uses horizontal scrolling with drag-to-scroll and mouse wheel support
+- Contact form submits to Web3Forms API — requires replacing `YOUR_ACCESS_KEY_HERE` in `index.html` with a real key
+- Design tokens (colors, fonts, spacing) are centralized in CSS `:root` variables
