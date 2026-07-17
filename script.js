@@ -1,22 +1,45 @@
 /* ============================
-   Bento Dashboard — JavaScript
-   GSAP + ScrollTrigger
+   Portfolio — Main Script
    ============================ */
 
 document.addEventListener('DOMContentLoaded', () => {
+    initCursorGlow();
     initNavbar();
+    initTerminal();
     initTypedEffect();
+    initScrollReveal();
+    initPipeline();
     initCountUp();
     initContactForm();
-
-    if (typeof gsap !== 'undefined') {
-        gsap.registerPlugin(ScrollTrigger);
-        initHeroAnimation();
-        initBentoAnimations();
-        initPipelineAnimation();
-        initActiveNav();
-    }
+    initSmoothScroll();
+    initCardGlow();
 });
+
+/* ============================
+   Cursor Glow
+   ============================ */
+function initCursorGlow() {
+    const glow = document.getElementById('cursorGlow');
+    if (!glow) return;
+
+    let mouseX = 0, mouseY = 0;
+    let glowX = 0, glowY = 0;
+
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+
+    function animate() {
+        glowX += (mouseX - glowX) * 0.08;
+        glowY += (mouseY - glowY) * 0.08;
+        glow.style.left = glowX + 'px';
+        glow.style.top = glowY + 'px';
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+}
 
 /* ============================
    Navbar
@@ -24,23 +47,152 @@ document.addEventListener('DOMContentLoaded', () => {
 function initNavbar() {
     const navbar = document.getElementById('navbar');
     const toggle = document.getElementById('navToggle');
-    const links = document.querySelector('.nav-links');
+    const links = document.getElementById('navLinks');
 
     window.addEventListener('scroll', () => {
         navbar.classList.toggle('scrolled', window.scrollY > 50);
     });
 
-    toggle.addEventListener('click', () => {
-        toggle.classList.toggle('active');
-        links.classList.toggle('active');
-    });
+    if (toggle && links) {
+        toggle.addEventListener('click', () => {
+            toggle.classList.toggle('active');
+            links.classList.toggle('active');
+        });
 
-    document.querySelectorAll('.nav-links a').forEach(link => {
-        link.addEventListener('click', () => {
-            toggle.classList.remove('active');
-            links.classList.remove('active');
+        links.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                toggle.classList.remove('active');
+                links.classList.remove('active');
+            });
+        });
+    }
+}
+
+/* ============================
+   Smooth Scroll
+   ============================ */
+function initSmoothScroll() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', (e) => {
+            e.preventDefault();
+            const target = document.querySelector(anchor.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         });
     });
+}
+
+/* ============================
+   Terminal Animation
+   ============================ */
+function initTerminal() {
+    const terminalBody = document.getElementById('terminal-body');
+    if (!terminalBody) return;
+
+    const commands = [
+        {
+            cmd: 'kubectl get nodes',
+            output: [
+                { text: 'NAME           STATUS   ROLES    AGE   VERSION', type: 'header' },
+                { text: 'master-01      Ready    master   90d   v1.28.4', type: 'success' },
+                { text: 'worker-01      Ready    worker   90d   v1.28.4', type: 'success' },
+                { text: 'worker-02      Ready    worker   90d   v1.28.4', type: 'success' },
+            ]
+        },
+        {
+            cmd: 'terraform plan',
+            output: [
+                { text: 'Refreshing state...', type: '' },
+                { text: 'Plan: 12 to add, 3 to change, 0 to destroy.', type: 'success' },
+            ]
+        },
+        {
+            cmd: 'docker ps --format "table {{.Names}}\\t{{.Status}}"',
+            output: [
+                { text: 'NAMES              STATUS', type: 'header' },
+                { text: 'nginx-proxy        Up 30 days', type: 'success' },
+                { text: 'app-server         Up 30 days', type: 'success' },
+                { text: 'monitoring         Up 30 days', type: 'success' },
+            ]
+        },
+        {
+            cmd: 'helm list -A',
+            output: [
+                { text: 'NAME         NAMESPACE    STATUS    CHART', type: 'header' },
+                { text: 'prometheus   monitoring   deployed  kube-prometheus-stack-45.7', type: 'success' },
+                { text: 'argocd       argocd       deployed  argo-cd-5.51.4', type: 'success' },
+                { text: 'ingress      ingress      deployed  ingress-nginx-4.8.3', type: 'success' },
+            ]
+        },
+    ];
+
+    let commandIndex = 0;
+
+    function typeCommand(cmdText, element, callback) {
+        let i = 0;
+        const interval = setInterval(() => {
+            element.textContent += cmdText[i];
+            i++;
+            if (i >= cmdText.length) {
+                clearInterval(interval);
+                if (callback) setTimeout(callback, 300);
+            }
+        }, 35);
+    }
+
+    function showOutput(outputs, parentEl, callback) {
+        let i = 0;
+        const interval = setInterval(() => {
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            line.innerHTML = `<span class="output-line ${outputs[i].type}">${outputs[i].text}</span>`;
+            parentEl.appendChild(line);
+            i++;
+            if (i >= outputs.length) {
+                clearInterval(interval);
+                if (callback) setTimeout(callback, 1500);
+            }
+        }, 120);
+    }
+
+    function runNextCommand() {
+        if (commandIndex >= commands.length) {
+            commandIndex = 0;
+            setTimeout(() => {
+                terminalBody.innerHTML = '';
+                runNextCommand();
+            }, 2000);
+            return;
+        }
+
+        const { cmd, output } = commands[commandIndex];
+        commandIndex++;
+
+        const promptLine = document.createElement('div');
+        promptLine.className = 'terminal-line';
+        const promptSpan = document.createElement('span');
+        promptSpan.className = 'prompt';
+        promptSpan.textContent = '❯';
+        const cmdSpan = document.createElement('span');
+        cmdSpan.className = 'command';
+        promptLine.appendChild(promptSpan);
+        promptLine.appendChild(document.createTextNode(' '));
+        promptLine.appendChild(cmdSpan);
+        terminalBody.appendChild(promptLine);
+
+        terminalBody.scrollTop = terminalBody.scrollHeight;
+
+        typeCommand(cmd, cmdSpan, () => {
+            showOutput(output, terminalBody, () => {
+                terminalBody.scrollTop = terminalBody.scrollHeight;
+                runNextCommand();
+            });
+        });
+    }
+
+    terminalBody.innerHTML = '';
+    setTimeout(runNextCommand, 1200);
 }
 
 /* ============================
@@ -54,8 +206,8 @@ function initTypedEffect() {
         'DevOps Engineer',
         'Cloud Architect',
         'Platform Engineer',
-        'SRE Specialist',
         'Infrastructure Automator',
+        'Linux Enthusiast',
     ];
 
     let textIndex = 0;
@@ -73,7 +225,7 @@ function initTypedEffect() {
             charIndex++;
         }
 
-        let delay = isDeleting ? 30 : 80;
+        let delay = isDeleting ? 30 : 70;
 
         if (!isDeleting && charIndex === currentText.length) {
             delay = 2000;
@@ -81,7 +233,7 @@ function initTypedEffect() {
         } else if (isDeleting && charIndex === 0) {
             isDeleting = false;
             textIndex = (textIndex + 1) % texts.length;
-            delay = 500;
+            delay = 400;
         }
 
         setTimeout(type, delay);
@@ -91,178 +243,72 @@ function initTypedEffect() {
 }
 
 /* ============================
-   GSAP Hero Animation
+   Scroll Reveal
    ============================ */
-function initHeroAnimation() {
-    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+function initScrollReveal() {
+    const revealSelectors = [
+        '.skill-card',
+        '.project-card',
+        '.cert-card',
+        '.highlight-card',
+        '.contact-info',
+        '.contact-form',
+        '.about-text',
+        '.config-card',
+        '.pipeline-stage'
+    ];
 
-    tl.from('.hero-greeting', { y: 20, opacity: 0, duration: 0.5 })
-      .from('.hero-name', { y: 40, opacity: 0, duration: 0.7 }, '-=0.2')
-      .from('.hero-title', { y: 20, opacity: 0, duration: 0.5 }, '-=0.3')
-      .from('.hero-desc', { y: 20, opacity: 0, duration: 0.5 }, '-=0.2')
-      .from('.hero-cta .btn', { y: 15, opacity: 0, stagger: 0.1, duration: 0.4 }, '-=0.2');
+    const revealElements = document.querySelectorAll(revealSelectors.join(', '));
+    revealElements.forEach(el => el.classList.add('reveal'));
 
-    // Animate stat cards with delay
-    gsap.from('.stat-card', {
-        y: 30,
-        opacity: 0,
-        duration: 0.5,
-        stagger: 0.1,
-        delay: 0.8,
-        ease: 'power3.out'
-    });
-}
-
-/* ============================
-   GSAP Bento Grid Animations
-   ============================ */
-function initBentoAnimations() {
-    // All bento cards except hero and stat cards (already animated)
-    const cards = gsap.utils.toArray('.bento-card:not(.hero-card):not(.stat-card)');
-
-    cards.forEach((card, i) => {
-        gsap.from(card, {
-            y: 40,
-            opacity: 0,
-            duration: 0.6,
-            ease: 'power3.out',
-            scrollTrigger: {
-                trigger: card,
-                start: 'top 90%',
-                toggleActions: 'play none none none'
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                }, index * 80);
+                observer.unobserve(entry.target);
             }
         });
-    });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
-    // Skill badges stagger within each card
-    gsap.utils.toArray('.skill-card').forEach(card => {
-        gsap.from(card.querySelectorAll('.skill-badge'), {
-            y: 10,
-            opacity: 0,
-            duration: 0.3,
-            stagger: 0.05,
-            ease: 'power2.out',
-            scrollTrigger: {
-                trigger: card,
-                start: 'top 85%',
-            }
-        });
-    });
-
-    // Project cards — slight scale
-    gsap.utils.toArray('.project-card').forEach(card => {
-        gsap.from(card, {
-            y: 50,
-            opacity: 0,
-            scale: 0.97,
-            duration: 0.6,
-            ease: 'power3.out',
-            scrollTrigger: {
-                trigger: card,
-                start: 'top 90%',
-            }
-        });
-    });
-
-    // Cert items stagger
-    gsap.from('.cert-item', {
-        x: -20,
-        opacity: 0,
-        duration: 0.4,
-        stagger: 0.1,
-        ease: 'power2.out',
-        scrollTrigger: {
-            trigger: '.cert-card',
-            start: 'top 85%',
-        }
-    });
-
-    // Experience cards
-    gsap.utils.toArray('.exp-card').forEach(card => {
-        gsap.from(card, {
-            x: -30,
-            opacity: 0,
-            duration: 0.6,
-            ease: 'power3.out',
-            scrollTrigger: {
-                trigger: card,
-                start: 'top 90%',
-            }
-        });
-    });
-
-    // Contact form
-    gsap.from('.contact-form .form-group', {
-        y: 20,
-        opacity: 0,
-        duration: 0.4,
-        stagger: 0.1,
-        ease: 'power2.out',
-        scrollTrigger: {
-            trigger: '.contact-card',
-            start: 'top 85%',
-        }
-    });
+    revealElements.forEach(el => observer.observe(el));
 }
 
 /* ============================
    Pipeline Animation
    ============================ */
-function initPipelineAnimation() {
-    const stages = gsap.utils.toArray('.pipe-stage');
-    const lines = gsap.utils.toArray('.pipe-line');
-    const fill = document.getElementById('pipelineFill');
-    if (!stages.length || !fill) return;
+function initPipeline() {
+    const stages = document.querySelectorAll('.pipeline-stage');
+    const connectors = document.querySelectorAll('.pipeline-connector');
+    const progressBar = document.getElementById('pipelineBar');
 
-    ScrollTrigger.create({
-        trigger: '.pipeline-card',
-        start: 'top 75%',
-        onEnter: () => {
-            const tl = gsap.timeline();
-            stages.forEach((stage, i) => {
-                tl.to(stage, {
-                    onStart: () => stage.classList.add('active'),
-                    duration: 0.01
-                }, i * 0.25)
-                .to(fill, {
-                    width: ((i + 1) / stages.length * 100) + '%',
-                    duration: 0.3,
-                    ease: 'power2.out'
-                }, i * 0.25);
-
-                if (i < lines.length) {
-                    tl.to(lines[i], {
-                        onStart: () => lines[i].classList.add('active'),
-                        duration: 0.01
-                    }, i * 0.25 + 0.1);
-                }
-            });
-        },
-        once: true
-    });
-}
-
-/* ============================
-   Active Nav Tracking
-   ============================ */
-function initActiveNav() {
-    const sections = document.querySelectorAll('section[id]');
-    const navLinks = document.querySelectorAll('.nav-links a');
-
-    sections.forEach(section => {
-        ScrollTrigger.create({
-            trigger: section,
-            start: 'top center',
-            end: 'bottom center',
-            onToggle: self => {
-                if (self.isActive) {
-                    navLinks.forEach(link => link.classList.remove('active'));
-                    const activeLink = document.querySelector(`.nav-links a[href="#${section.id}"]`);
-                    if (activeLink) activeLink.classList.add('active');
-                }
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animatePipeline();
+                observer.unobserve(entry.target);
             }
         });
-    });
+    }, { threshold: 0.3 });
+
+    const pipelineWrapper = document.querySelector('.pipeline-wrapper');
+    if (pipelineWrapper) {
+        observer.observe(pipelineWrapper);
+    }
+
+    function animatePipeline() {
+        stages.forEach((stage, i) => {
+            setTimeout(() => {
+                stage.classList.add('active');
+                if (connectors[i]) {
+                    connectors[i].classList.add('active');
+                }
+                const progress = ((i + 1) / stages.length) * 100;
+                if (progressBar) progressBar.style.width = progress + '%';
+            }, i * 400);
+        });
+    }
 }
 
 /* ============================
@@ -308,27 +354,67 @@ function initCountUp() {
 }
 
 /* ============================
-   Contact Form
+   Card Glow Effect
+   ============================ */
+function initCardGlow() {
+    const cards = document.querySelectorAll('.skill-card, .project-card');
+
+    cards.forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            card.style.setProperty('--mouse-x', x + 'px');
+            card.style.setProperty('--mouse-y', y + 'px');
+        });
+    });
+}
+
+/* ============================
+   Contact Form — Web3Forms
    ============================ */
 function initContactForm() {
     const form = document.getElementById('contactForm');
     if (!form) return;
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const btn = form.querySelector('button[type="submit"]');
         const originalText = btn.innerHTML;
 
-        btn.innerHTML = 'Message Sent!';
-        btn.style.background = 'linear-gradient(135deg, #22c55e 0%, #10b981 100%)';
-        btn.style.color = '#fff';
+        btn.innerHTML = '<span>Sending...</span>';
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+
+        try {
+            const formData = new FormData(form);
+            const response = await fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                btn.innerHTML = '<span>✓ Message Sent!</span>';
+                btn.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
+                form.reset();
+            } else {
+                btn.innerHTML = '<span>✕ Failed to Send</span>';
+                btn.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+            }
+        } catch (error) {
+            btn.innerHTML = '<span>✕ Network Error</span>';
+            btn.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+        }
 
         setTimeout(() => {
             btn.innerHTML = originalText;
             btn.style.background = '';
-            btn.style.color = '';
-            form.reset();
+            btn.disabled = false;
+            btn.style.opacity = '';
         }, 3000);
     });
 }
